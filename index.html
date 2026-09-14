@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Control Financiero</title>
+    <style>
+        :root {
+            --primary: #E8185D;
+            --primary-dark: #9F1239;
+            --bg: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --green: #059669;
+            --green-bg: #ECFDF5;
+            --red: #E11D48;
+            --border: #E2E8F0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); color: var(--text-main); padding-bottom: 90px; }
+        header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 20px 16px 30px 16px; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; box-shadow: 0 4px 15px rgba(232, 24, 93, 0.2); text-align: center; }
+        header h1 { font-size: 1.4rem; font-weight: 700; }
+        header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; }
+        .container { padding: 0 16px; margin-top: -20px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .kpi-card { background: var(--card-bg); padding: 14px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid var(--border); text-align: center; }
+        .kpi-card.full { grid-column: span 2; background: var(--green-bg); border-color: #A7F3D0; }
+        .kpi-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        .kpi-value { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+        .kpi-value.green { color: var(--green); }
+        .kpi-value.red { color: var(--red); }
+        .section-title { font-size: 1rem; font-weight: 700; margin: 20px 0 10px 0; display: flex; justify-content: space-between; align-items: center; }
+        .reset-btn { background: none; border: 1px solid var(--border); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; color: var(--text-muted); cursor: pointer; }
+        .expense-list { display: flex; flex-direction: column; gap: 10px; }
+        .expense-item { background: var(--card-bg); padding: 14px; border-radius: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.03); border: 1px solid var(--border); }
+        .expense-info h4 { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+        .expense-info p { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .expense-amount { text-align: right; }
+        .expense-amount .price { font-size: 1rem; font-weight: 700; color: var(--red); }
+        .expense-amount .income { color: var(--green); }
+        .expense-amount .saldo { font-size: 0.75rem; font-weight: 600; color: var(--green); margin-top: 2px; }
+        .delete-btn { background: #FEE2E2; border: none; color: var(--red); font-size: 0.9rem; margin-left: 10px; cursor: pointer; padding: 6px 10px; border-radius: 8px; font-weight: bold; }
+        .fab { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; border: none; border-radius: 50px; padding: 14px 24px; font-size: 1rem; font-weight: 700; box-shadow: 0 6px 20px rgba(232, 24, 93, 0.4); display: flex; align-items: center; gap: 8px; cursor: pointer; z-index: 10; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 100; align-items: flex-end; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; width: 100%; padding: 24px 20px; border-top-left-radius: 24px; border-top-right-radius: 24px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; outline: none; }
+        .btn-submit { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .btn-close { background: transparent; border: none; color: var(--text-muted); font-size: 0.9rem; width: 100%; padding: 10px; margin-top: 6px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Mi Control Financiero 💸</h1>
+        <p>Presupuesto y Deudas</p>
+    </header>
+    <div class="container">
+        <div class="kpi-grid">
+            <div class="kpi-card full">
+                <div class="kpi-label">✨ Saldo a Favor Disponible</div>
+                <div class="kpi-value green" id="saldo-favor">$0</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Sueldo / Ingreso</div>
+                <div class="kpi-value" id="total-ingreso">$0</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Gastos Totales</div>
+                <div class="kpi-value red" id="total-gastos">$0</div>
+            </div>
+        </div>
+        <div class="section-title">
+            <span>Movimientos del Mes</span>
+            <button class="reset-btn" onclick="resetToDefault()">Restablecer Lista</button>
+        </div>
+        <div class="expense-list" id="expense-container"></div>
+    </div>
+    <button class="fab" onclick="openModal()"><span>+</span> Agregar</button>
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 16px;">Nuevo Movimiento</h3>
+            <div class="form-group">
+                <label>Tipo de movimiento</label>
+                <select id="type">
+                    <option value="gasto">Gasto / Deuda (-)</option>
+                    <option value="ingreso">Sueldo / Ingreso (+)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Concepto / Detalle</label>
+                <input type="text" id="concept" placeholder="Ej: Supermercado, Farmacia...">
+            </div>
+            <div class="form-group">
+                <label>Monto ($)</label>
+                <input type="number" id="amount" placeholder="Ej: 15000">
+            </div>
+            <button class="btn-submit" onclick="addMovement()">Guardar Movimiento</button>
+            <button class="btn-close" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+    <script>
+        const defaultMovements = [
+            { id: 1, type: 'ingreso', concept: 'Sueldo Base Mensual 💸', amount: 1018000, date: 'Septiembre' },
+            { id: 2, type: 'gasto', concept: 'Arriendo 🏡', amount: 335000, date: 'Septiembre' },
+            { id: 3, type: 'gasto', concept: 'Gastos Comunes (GG CC) 🏢', amount: 25500, date: 'Septiembre' },
+            { id: 4, type: 'gasto', concept: 'Plan Celular 📱', amount: 8221, date: 'Septiembre' },
+            { id: 5, type: 'gasto', concept: 'Wifi Mundo 🌐', amount: 14990, date: 'Septiembre' },
+            { id: 6, type: 'gasto', concept: 'Netflix 🎬', amount: 15880, date: 'Septiembre' },
+            { id: 7, type: 'gasto', concept: 'Clases Canto (P) (Mes anterior) 🎤', amount: 85000, date: 'Septiembre' },
+            { id: 8, type: 'gasto', concept: 'Deuda Feñongo <2/2> 🍷', amount: 190000, date: 'Septiembre' },
+            { id: 9, type: 'gasto', concept: 'Lurasidona 💊', amount: 15000, date: 'Septiembre' },
+            { id: 10, type: 'gasto', concept: 'Combustible ⛽', amount: 20000, date: 'Septiembre' },
+            { id: 11, type: 'gasto', concept: 'Lela Martita 👵', amount: 20000, date: 'Septiembre' },
+            { id: 12, type: 'gasto', concept: 'Lela Kika 👵', amount: 20000, date: 'Septiembre' }
+        ];
+        let movements = [];
+        try {
+            const saved = localStorage.getItem('app_finanzas_v3');
+            if (saved) { movements = JSON.parse(saved); } else { movements = JSON.parse(JSON.stringify(defaultMovements)); }
+        } catch (e) { movements = JSON.parse(JSON.stringify(defaultMovements)); }
+        function formatMoney(a) { return '$' + Math.round(a).toLocaleString('es-CL'); }
+        function render() {
+            const c = document.getElementById('expense-container'); c.innerHTML = '';
+            let ti = 0, tg = 0, rs = 0;
+            movements.forEach((i) => {
+                if (i.type === 'ingreso') { ti += i.amount; rs += i.amount; } else { tg += i.amount; rs -= i.amount; }
+                const card = document.createElement('div'); card.className = 'expense-item';
+                card.innerHTML = `<div class="expense-info"><h4>${i.concept}</h4><p>${i.date||'Septiembre'}</p></div><div style="display:flex;align-items:center;"><div class="expense-amount"><div class="price ${i.type==='ingreso'?'income':''}">${i.type==='ingreso'?'+':'-'}${formatMoney(i.amount)}</div><div class="saldo">Saldo: ${formatMoney(rs)}</div></div><button class="delete-btn" onclick="deleteItem(${i.id})">✕</button></div>`;
+                c.appendChild(card);
+            });
+            document.getElementById('total-ingreso').innerText = formatMoney(ti);
+            document.getElementById('total-gastos').innerText = formatMoney(tg);
+            document.getElementById('saldo-favor').innerText = formatMoney(ti - tg);
+            try { localStorage.setItem('app_finanzas_v3', JSON.stringify(movements)); } catch (e) {}
+        }
+        function openModal() { document.getElementById('modal').classList.add('active'); }
+        function closeModal() { document.getElementById('modal').classList.remove('active'); document.getElementById('concept').value = ''; document.getElementById('amount').value = ''; }
+        function addMovement() {
+            const c = document.getElementById('concept').value.trim(), a = parseFloat(document.getElementById('amount').value), t = document.getElementById('type').value;
+            if (!c || isNaN(a) || a <= 0) { alert('Monto o concepto inválido.'); return; }
+            movements.push({ id: Date.now(), type: t, concept: c, amount: a, date: 'Septiembre' });
+            render(); closeModal();
+        }
+        function deleteItem(id) { movements = movements.filter(m => m.id !== id); render(); }
+        function resetToDefault() { if (confirm('¿Restablecer lista original?')) { movements = JSON.parse(JSON.stringify(defaultMovements)); render(); } }
+        render();
+    </script>
+</body>
+</html>
